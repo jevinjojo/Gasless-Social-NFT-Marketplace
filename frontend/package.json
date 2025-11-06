@@ -1,0 +1,47 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@biconomy/account": "^4.5.7",
+    "@biconomy/bundler": "^3.1.4",
+    "@biconomy/common": "^3.1.4",
+    "@biconomy/core-types": "^3.1.4",
+    "@biconomy/modules": "^3.1.4",
+    "@biconomy/paymaster": "^3.1.4",
+    "@rainbow-me/rainbowkit": "^2.2.9",
+    "@web3auth/base": "^8.12.4",
+    "@web3auth/ethereum-provider": "^8.12.4",
+    "@web3auth/metamask-adapter": "^8.12.4",
+    "@web3auth/modal": "^8.12.7",
+    "@web3auth/openlogin-adapter": "^8.12.4",
+    "@web3auth/wallet-connect-v2-adapter": "^9.7.0",
+    "axios": "^1.13.2",
+    "ethers": "^6.15.0",
+    "framer-motion": "^12.23.24",
+    "next": "16.0.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-hot-toast": "^2.6.0",
+    "react-icons": "^5.5.0",
+    "viem": "^2.38.6",
+    "wagmi": "^2.19.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20.19.24",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
