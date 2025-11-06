@@ -137,6 +137,4 @@ Built with ❤️ for the Web3 community
 4. **Deploy contract**
 5. **Get test ETH**
 
-**Total setup time: ~25 minutes** ⏱️
-
 This gives users everything they need to understand, set up, and run your project!
