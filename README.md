@@ -10,8 +10,8 @@ A modern NFT marketplace that eliminates Web3 friction through social login and 
 - 🎨 **Easy NFT Minting**: Simple form-based NFT creation
 - 🌐 **Web3 Integration**: Full blockchain functionality with Web2 UX
 
-## 🛠️ Tech Stack
- 
+## 🛠️ Tech Stacks
+   
 - **Frontend**: Next.js 16, React 19, TypeScript, Tailwind CSS
 - **Web3**: Ethers.js, Biconomy SDK, Web3Auth
 - **Smart Contracts**: Solidity, Hardhat
