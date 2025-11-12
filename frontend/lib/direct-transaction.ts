@@ -21,9 +21,7 @@ export async function sendDirectTransaction(
         console.log("Data length:", transaction.data.length);
         
         // Send transaction without paymaster (user will pay gas in ETH)
-        const txResponse = await smartAccount.sendTransaction(transaction, {
-            paymasterServiceData: { mode: "SPONSORED" }  // This might still work
-        });
+        const txResponse = await smartAccount.sendTransaction(transaction);
         
         console.log("✅ Direct transaction submitted!");
         return txResponse;

@@ -87,7 +87,7 @@ export async function sendAlternativeTransaction(
         // Method 5: Try with different paymaster mode
         try {
             console.log("Method 5: Trying without paymaster (user pays gas)...");
-            const result = await smartAccount.sendTransaction(tx, { paymasterServiceData: { mode: "SPONSORED" } });
+            const result = await smartAccount.sendTransaction(tx);
             console.log("Method 5 successful!");
             return result;
         } catch (error5: any) {
