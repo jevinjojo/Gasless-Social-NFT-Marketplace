@@ -87,7 +87,13 @@ export async function sendAlternativeTransaction(
         // Method 5: Try with different paymaster mode
         try {
             console.log("Method 5: Trying without paymaster (user pays gas)...");
-            const result = await smartAccount.sendTransaction(tx);
+            const result = await smartAccount.sendTransaction(tx, { 
+                paymasterServiceData: { mode: "SPONSORED" as any },
+                overrides: {
+                    maxFeePerGas: "20000000000", // 20 gwei as string
+                    maxPriorityFeePerGas: "2000000000", // 2 gwei as string
+                }
+            });
             console.log("Method 5 successful!");
             return result;
         } catch (error5: any) {

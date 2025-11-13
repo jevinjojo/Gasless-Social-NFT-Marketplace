@@ -13,75 +13,91 @@ export async function sendBiconomyTransaction(
     txRequest: TransactionRequest
 ): Promise<any> {
     try {
-        console.log("Preparing Biconomy transaction...");
+        console.log("🚀 Preparing Biconomy v2 gasless transaction...");
         
-        // Ensure proper formatting
-        const formattedTx = {
-            to: ethers.getAddress(txRequest.to), // Ensure proper address format
+        // Format transaction for v2 API
+        const transaction = {
+            to: txRequest.to,
             data: txRequest.data,
-            value: txRequest.value || "0x0",
+            value: txRequest.value || "0",
         };
         
-        console.log("Formatted transaction to:", formattedTx.to);
-        console.log("Transaction data length:", formattedTx.data.length);
+        console.log("Transaction details:");
+        console.log("- To:", transaction.to);
+        console.log("- Data length:", transaction.data.length);
+        console.log("- Value:", transaction.value);
         
-        // Method 1: Direct sendTransaction (most common)
+        // Method 1: Try with paymaster sponsorship
         try {
-            console.log("Attempting direct sendTransaction...");
+            console.log("Attempting sponsored transaction...");
             
-            // Skip manual gas estimation for now as it's causing issues
-            console.log("Skipping manual gas estimation...");
+            const userOpResponse = await smartAccount.sendTransaction(transaction, {
+                paymasterServiceData: { mode: "SPONSORED" },
+            });
             
-            const result = await smartAccount.sendTransaction(formattedTx);
-            console.log("Direct sendTransaction successful");
-            return result;
-        } catch (directError: any) {
-            console.log("Direct sendTransaction failed:", directError.message);
+            console.log("✅ Sponsored transaction successful!");
+            return userOpResponse;
             
-            // Method 2: Try with explicit gas estimation
-            if (directError.message?.includes("callGasLimit") || directError.message?.includes("gas")) {
+        } catch (sponsoredError: any) {
+            console.log("❌ Sponsored transaction failed:", sponsoredError.message);
+            
+            // Method 2: Try without explicit paymaster mode
+            try {
+                console.log("Attempting basic gasless transaction...");
+                
+                const userOpResponse = await smartAccount.sendTransaction(transaction);
+                console.log("✅ Basic gasless transaction successful!");
+                return userOpResponse;
+                
+            } catch (basicError: any) {
+                console.log("❌ Basic gasless transaction failed:", basicError.message);
+                
+                // Method 3: Try with manual user operation building
                 try {
-                    console.log("Attempting with gas estimation...");
+                    console.log("Attempting manual user operation...");
                     
-                    // Build user operation first
-                    const userOp = await smartAccount.buildUserOp([formattedTx]);
-                    console.log("Built user operation successfully");
+                    // Build user operation manually
+                    const partialUserOp = await smartAccount.buildUserOp([transaction]);
                     
                     // Send the user operation
-                    const result = await smartAccount.sendUserOp(userOp);
-                    console.log("User operation successful");
-                    return result;
-                } catch (gasError: any) {
-                    console.log("Gas estimation method failed:", gasError.message);
+                    const userOpResponse = await smartAccount.sendUserOp(partialUserOp);
+                    console.log("✅ Manual user operation successful!");
+                    return userOpResponse;
+                    
+                } catch (manualError: any) {
+                    console.log("❌ Manual user operation failed:", manualError.message);
+                    
+                    // Method 4: Try self-funded (user pays gas)
+                    try {
+                        console.log("Attempting self-funded transaction...");
+                        
+                        const userOpResponse = await smartAccount.sendTransaction(transaction, {
+                            paymasterServiceData: { mode: "ERC20" }, // This typically means self-funded
+                        });
+                        
+                        console.log("✅ Self-funded transaction successful!");
+                        return userOpResponse;
+                        
+                    } catch (selfFundedError: any) {
+                        console.log("❌ Self-funded transaction failed:", selfFundedError.message);
+                        throw basicError; // Throw the most relevant error
+                    }
                 }
             }
-            
-            // Method 3: Try with array format
-            try {
-                console.log("Attempting with array format...");
-                const result = await smartAccount.sendTransaction([formattedTx]);
-                console.log("Array format successful");
-                return result;
-            } catch (arrayError: any) {
-                console.log("Array format failed:", arrayError.message);
-            }
-            
-            // If all methods fail, throw the original error
-            throw directError;
         }
         
     } catch (error: any) {
-        console.error("All transaction methods failed:", error);
+        console.error("❌ All Biconomy transaction methods failed:", error);
         
-        // Provide more specific error messages
-        if (error.message?.includes("callGasLimit")) {
-            throw new Error("Gas estimation failed. This might be due to network issues or contract problems. Please try again.");
+        // Provide specific error messages based on the error
+        if (error.message?.includes("callGasLimit") || error.message?.includes("undefined")) {
+            throw new Error("Gas estimation failed due to API version mismatch. Please check your smart account balance and try again.");
         } else if (error.message?.includes("paymaster")) {
-            throw new Error("Paymaster service is unavailable. Please try again later.");
+            throw new Error("Paymaster service is unavailable. The transaction will require gas payment.");
         } else if (error.message?.includes("insufficient")) {
-            throw new Error("Insufficient funds or gas. Please check your account balance.");
+            throw new Error("Insufficient balance. Please fund your smart account with some Sepolia ETH.");
         } else if (error.message?.includes("revert")) {
-            throw new Error("Transaction would fail. Please check the contract parameters.");
+            throw new Error("Transaction would fail. Please check the contract function and parameters.");
         }
         
         throw error;

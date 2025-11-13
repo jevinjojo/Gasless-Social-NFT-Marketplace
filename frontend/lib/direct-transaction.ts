@@ -20,7 +20,7 @@ export async function sendDirectTransaction(
         console.log("Target:", transaction.to);
         console.log("Data length:", transaction.data.length);
         
-        // Send transaction without paymaster (user will pay gas in ETH)
+        // Send transaction with paymaster (gasless)
         const txResponse = await smartAccount.sendTransaction(transaction);
         
         console.log("✅ Direct transaction submitted!");

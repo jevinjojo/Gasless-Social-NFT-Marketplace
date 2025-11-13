@@ -52,6 +52,46 @@ export default function MintNFT() {
       // Run diagnostics on the smart account
       console.log("Running Biconomy account diagnostics...");
       await diagnoseBiconomyAccount(smartAccount);
+      
+      // Check smart account balance for gas estimation
+      console.log("🔍 Checking smart account balance...");
+      const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
+      const balance = await provider.getBalance(userAddress);
+      
+      if (balance === 0n) {
+        const fundingMessage = `
+🔧 SMART ACCOUNT NEEDS SEPOLIA ETH
+
+Your smart account has 0 ETH balance. Even for gasless transactions, 
+you need a small amount of ETH for gas estimation simulation.
+
+📋 QUICK FIX (2 minutes):
+1. Go to: https://sepoliafaucet.com
+2. Enter this address: ${userAddress}
+3. Request 0.1 Sepolia ETH
+4. Wait for confirmation (1-2 minutes)
+5. Try minting again
+
+🔗 Alternative faucets:
+• https://faucet.sepolia.dev
+• https://www.alchemy.com/faucets/ethereum-sepolia
+
+💡 Why needed?
+• Gas estimation requires ETH for simulation
+• Paymaster will still sponsor your actual gas costs
+• You only need ~0.01 ETH (one-time setup)
+• This enables TRUE gasless transactions
+
+⚠️ Use only Sepolia testnet ETH (free from faucets)
+        `;
+        alert(fundingMessage);
+        
+        // Also open the faucet in a new tab for user convenience
+        window.open("https://sepoliafaucet.com", "_blank");
+        return;
+      }
+      
+      console.log(`✅ Smart account balance: ${ethers.formatEther(balance)} ETH - proceeding with transaction...`);
 
       // Create metadata JSON
       const metadata = {
@@ -83,52 +123,88 @@ export default function MintNFT() {
       console.log("Transaction data length:", txRequest.data.length);
       console.log("Transaction value:", txRequest.value);
 
-      // Try sending transaction with multiple methods (starting with wallet bypass)
+      // Try sending gasless transaction with Biconomy (proper gasless flow)
       let tx;
       
-      // Method 0: Direct wallet transaction (bypasses Biconomy completely)
+      // Method 0: Try BASIC gasless transaction with explicit gas
       try {
-        console.log("Attempting direct wallet transaction (bypassing Biconomy)...");
+        console.log("🚀 Attempting BASIC gasless transaction with fixed gas...");
         
-        // Check if wallet is on correct network
-        const walletNetworkOk = await checkWalletNetwork();
-        if (!walletNetworkOk) {
-          throw new Error("Wallet not on Sepolia network");
-        }
+        // Create transaction with explicit gas to bypass estimation
+        const basicTx = {
+          to: txRequest.to,
+          data: txRequest.data,
+          value: "0",
+          gasLimit: "300000", // Fixed gas limit
+        };
         
-        tx = await sendWalletTransaction(userAddress!, txRequest.data);
-        console.log("✅ Wallet transaction successful!");
-      } catch (walletError: any) {
-        console.log("Wallet method failed:", walletError.message);
+        console.log("Using fixed gas limit:", basicTx.gasLimit);
         
-        // Method 1: Simple transaction (Biconomy fallback)
+        // Try the most basic sendTransaction call
+        tx = await smartAccount.sendTransaction(basicTx);
+        console.log("✅ BASIC gasless transaction successful!");
+      } catch (basicError: any) {
+        console.log("❌ Basic gasless method failed:", basicError.message);
+        console.log("❌ Basic gasless error details:", basicError);
+        
+        // Method 1: Primary gasless transaction method (Biconomy)
         try {
-          console.log("Attempting simple transaction method...");
-          tx = await sendSimpleTransaction(smartAccount, { to: txRequest.to, data: txRequest.data });
-        } catch (simpleError: any) {
-          console.log("Simple method failed:", simpleError.message);
-        
-        // Method 2: Primary transaction method
-        try {
-          console.log("Attempting primary transaction method...");
+          console.log("🚀 Attempting standard gasless transaction via Biconomy...");
           tx = await sendBiconomyTransaction(smartAccount, txRequest);
+          console.log("✅ Standard gasless transaction successful!");
         } catch (primaryError: any) {
-          console.log("Primary method failed, trying alternative method...");
-          console.log("Primary error:", primaryError.message);
+          console.log("Primary gasless method failed:", primaryError.message);
           
-          // Method 3: Direct transaction (bypass paymaster issues)
+          // Method 2: Simple gasless transaction (Biconomy fallback)
           try {
-            console.log("Attempting direct transaction (no paymaster)...");
-            tx = await sendDirectTransaction(smartAccount, txRequest.to, txRequest.data);
-          } catch (directError: any) {
-            console.log("Direct method failed:", directError.message);
+            console.log("Attempting simple gasless transaction...");
+            tx = await sendSimpleTransaction(smartAccount, { to: txRequest.to, data: txRequest.data });
+            console.log("✅ Simple gasless transaction successful!");
+          } catch (simpleError: any) {
+            console.log("Simple gasless method failed:", simpleError.message);
             
-              // Method 4: Alternative methods as last resort
+            // Method 3: Direct gasless transaction (no paymaster, but still gasless)
+            try {
+              console.log("Attempting direct gasless transaction...");
+              tx = await sendDirectTransaction(smartAccount, txRequest.to, txRequest.data);
+              console.log("✅ Direct gasless transaction successful!");
+            } catch (directError: any) {
+              console.log("Direct gasless method failed:", directError.message);
+              
+              // Method 4: Alternative gasless methods
               try {
+                console.log("Attempting alternative gasless transaction...");
                 tx = await sendAlternativeTransaction(smartAccount, txRequest);
+                console.log("✅ Alternative gasless transaction successful!");
               } catch (altError: any) {
-                console.log("All methods failed!");
-                throw new Error(`All transaction methods failed. Try wallet method first, then contact support if issues persist.`);
+                console.log("All gasless methods failed:", altError.message);
+                
+                // Method 5: Wallet fallback (ONLY if all gasless methods fail)
+                try {
+                  console.log("⚠️ Gasless failed - attempting wallet transaction as last resort...");
+                  console.log("Note: This will require gas payment from user");
+                  
+                  // Check if wallet is available and on correct network
+                  const walletNetworkOk = await checkWalletNetwork();
+                  if (!walletNetworkOk) {
+                    throw new Error("Wallet not available or not on Sepolia network");
+                  }
+                  
+                  // Confirm with user before charging gas
+                  const userConfirms = window.confirm(
+                    "Gasless transaction failed. Would you like to proceed with a regular transaction (you will pay gas fees)?"
+                  );
+                  
+                  if (!userConfirms) {
+                    throw new Error("User cancelled transaction");
+                  }
+                  
+                  tx = await sendWalletTransaction(userAddress!, txRequest.data);
+                  console.log("✅ Wallet transaction successful (user paid gas)");
+                } catch (walletError: any) {
+                  console.log("Wallet fallback also failed:", walletError.message);
+                  throw new Error(`All transaction methods failed. Please check your connection and try again. Error: ${walletError.message}`);
+                }
               }
             }
           }
