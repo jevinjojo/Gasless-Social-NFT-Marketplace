@@ -58,7 +58,7 @@ export default function MintNFT() {
       const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
       const balance = await provider.getBalance(userAddress);
       
-      if (balance === 0n) {
+      if (balance === BigInt(0)) {
         const fundingMessage = `
 🔧 SMART ACCOUNT NEEDS SEPOLIA ETH
 
