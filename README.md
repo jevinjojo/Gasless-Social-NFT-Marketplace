@@ -5,7 +5,7 @@ A modern NFT marketplace that eliminates Web3 friction through social login and 
 ## ✨ Features
 
 - 🔐 **Social Login**: Sign in with Google/Twitter (no wallet needed)
-- ⛽ **Gasless Transactions**: Mint NFTs without paying gas fees
+- ⛽ **Gasless Transactions**: Mint NFTs without paying gas fees   
 - 🔗 **Account Abstraction**: Powered by Biconomy Smart Accounts
 - 🎨 **Easy NFT Minting**: Simple form-based NFT creation
 - 🌐 **Web3 Integration**: Full blockchain functionality with Web2 UX
